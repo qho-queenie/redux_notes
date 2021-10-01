@@ -3,9 +3,10 @@ import { useDispatch, useSelector } from 'react-redux';
 
 // adding a new action creator from the slice
 import { addNewPost } from './postsSlice';
+import { selectAllUsers } from '../users/usersSlice';
 
 export const AddPostForm = () => {
-    const listOfAuthors = useSelector(state => state.users);
+    const listOfAuthors = useSelector(selectAllUsers);
 
     // these are not global states, so can stay as local hooks:
     // only AddPostForm needs to know these temp states

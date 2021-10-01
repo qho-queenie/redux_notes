@@ -12,6 +12,10 @@ export const Navbar = () => {
             <Link to={'/'} className='button muted-button'>
               All Posts
             </Link>
+
+            <Link to={`/users`} className='button muted-button'>
+              All Users
+            </Link>
           </div>
 
         </div>
