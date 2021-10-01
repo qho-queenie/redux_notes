@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import { PostAuthor } from './PostAuthor'
 import { TimeAgo } from './TimeAgo'
 import { ReactionButtons } from './ReactionButtons'
+import { selectPostById } from './postsSlice'
 
 // react-router will pass a match obj as a prop, which contains the URL info 
 export const SinglePostPage = ({ match }) => {
@@ -12,10 +13,15 @@ export const SinglePostPage = ({ match }) => {
 
     // is there any way to liftup selectors? This seems like a common repetitor, why cant 'post' exist everywhere?
     // useSelector re-renders component whenever its 'state' or reference changes, so keep it small to avoid unnecc re-rendering
-    const post = useSelector(state =>
-        // in case user types in an invalid id, or post has been delete, etc
-        state.posts.find(post => post.id === postId)
-    )
+
+    // yes, common selectors are now in the slice reducer
+
+    // const post = useSelector(state =>
+    //     // in case user types in an invalid id, or post has been delete, etc
+    //     state.posts.find(post => post.id === postId)
+    // )
+
+    const post = useSelector(state => selectPostById(state, postId));
 
     if (!post) {
         return (

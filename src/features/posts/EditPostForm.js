@@ -6,10 +6,10 @@
 // dispatch the new content and title to the reducer postUpdated, then it will update the store
 
 import React, { useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 
-import { postUpdated } from './postsSlice';
+import { postUpdated, selectPostById } from './postsSlice';
 
 export const EditPostForm = ({ match }) => {
     // react-router will pass a match obj as a prop, which contains the URL info 
@@ -17,9 +17,14 @@ export const EditPostForm = ({ match }) => {
     const { postId } = match.params
 
     // useSelector gets the complete state, in all the posts find the post that has the id equals to match.params
-    const post = useSelector(state =>
-        state.posts.find(post => post.id === postId)
-    )
+
+    // (common) selectors extracted from componenets to their reducer
+    // so we dont have to rewrite the same select const all the time
+
+    // const post = useSelector(state =>
+    //     state.posts.find(post => post.id === postId)
+    // )
+    const post = useSelector(state => selectPostById(state, postId));
 
     // imported then use it
     const dispatch = useDispatch();

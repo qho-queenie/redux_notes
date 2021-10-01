@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 // adding a new action creator from the slice
-import { postAdded } from './postsSlice';
+import { addNewPost } from './postsSlice';
 
 export const AddPostForm = () => {
     const listOfAuthors = useSelector(state => state.users);
@@ -13,6 +13,8 @@ export const AddPostForm = () => {
     const [content, setContent] = useState('');
     const [userId, setUserId] = useState('');
     const [disabled, setDisabled] = useState(true);
+
+    const [addRequestStatus, setAddRequestStatus] = useState('idle');
 
     const firstRender = useRef(true);
 
@@ -43,13 +45,31 @@ export const AddPostForm = () => {
     // imported, then use it
     const dispatch = useDispatch();
 
-    const onSavePostClicked = () => {
-        if (!disabled) {
-            dispatch(postAdded(title, content, userId));
+    // when this async thunk returns a promise from the dispatch, 
+    // we can await that promise here so we know when the thunk has finished the request
+    const onSavePostClicked = async () => {
+        console.log(userId, 'userID from state hook')
+        if (!disabled && addRequestStatus === 'idle') {
 
-            //dont we need something try catch?
-            setTitle('');
-            setContent('');
+            try {
+                setAddRequestStatus('pending');
+                setDisabled(true);
+                // somehow this unwrap is returned by the promise as well:
+                // it gives us the action.payload if the promise has been fulfilled
+                // or it gives an error if its a reject in the promise
+                // this allows us to use it to display to POSTed results, or the error
+                await dispatch(addNewPost({ title, content, user: userId })).unwrap()
+
+                //dont we need something try catch? yes
+                setTitle('');
+                setContent('');
+                setUserId('')
+            } catch (err) {
+                console.log(err)
+            } finally {
+                setDisabled(false);
+                setAddRequestStatus('idle')
+            }
         }
     }
 
