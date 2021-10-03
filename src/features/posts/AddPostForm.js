@@ -49,7 +49,6 @@ export const AddPostForm = () => {
     // when this async thunk returns a promise from the dispatch, 
     // we can await that promise here so we know when the thunk has finished the request
     const onSavePostClicked = async () => {
-        console.log(userId, 'userID from state hook')
         if (!disabled && addRequestStatus === 'idle') {
 
             try {
@@ -95,7 +94,9 @@ export const AddPostForm = () => {
                     {authorsOptions}
                 </select>
 
-                <lable className='postContent'>Content:</lable>
+                <lable className='postContent'>
+                    Content:
+                </lable>
                 <textarea
                     type='text'
                     id='postContent'

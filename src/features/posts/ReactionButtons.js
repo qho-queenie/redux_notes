@@ -11,7 +11,7 @@ const reactionEmoji = {
     thumbsUp: '👍',
     hooray: '🎉',
     heart: '❤️',
-    poop: '💩',
+    rocket: '🚀',
     eyes: '👀'
 };
 

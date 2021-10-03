@@ -10,7 +10,7 @@ import { selectPostById } from './postsSlice'
 // react-router will pass a match obj as a prop, which contains the URL info 
 export const SinglePostPage = ({ match }) => {
     const { postId } = match.params
-
+    console.log('singlePostPage', postId)
     // is there any way to liftup selectors? This seems like a common repetitor, why cant 'post' exist everywhere?
     // useSelector re-renders component whenever its 'state' or reference changes, so keep it small to avoid unnecc re-rendering
 

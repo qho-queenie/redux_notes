@@ -1,6 +1,19 @@
 // createSlice to make a reducer function that handles notification data
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import {
+    createSlice,
+    createAsyncThunk,
+    createEntityAdapter,
+    current
+} from '@reduxjs/toolkit';
+import startOfYesterday from 'date-fns/esm/startOfYesterday';
 import { client } from '../../api/client';
+
+const notificationsAdaptor = createEntityAdapter({
+    // notifications are ALWAYS sorted
+    sortComparer: (a, b) => b.date.localeCompare(a.date)
+});
+
+const initialState = notificationsAdaptor.getInitialState();
 
 // thunks:
 // receive 2 args:
@@ -24,11 +37,16 @@ export const fetchNotifications = createAsyncThunk(
 
 const notificationsSlice = createSlice({
     name: 'notifications',
-    initialState: [],
+    initialState,
     reducers: {
         // to set all current notications to be 'read' true
         allNotificationsRead(state, action) {
-            state.forEach(notification => {
+            // state.forEach(notification => {
+            //     notification.read = true;
+            // })
+            console.log(current(state), 'i wanna know what shape is now the notification entity in allNotificationsRead')
+            // state.entities is no longer an array, KNOW YOUR ENTITY STRUCTURE BEFORE APPLY REDUCER FUNCS!
+            Object.values(state.entities).forEach(notification => {
                 notification.read = true;
             })
         }
@@ -40,19 +58,30 @@ const notificationsSlice = createSlice({
     extraReducers(builder) {
         builder.addCase(fetchNotifications.fulfilled, (state, action) => {
             // push the return array of action.payload into the current state array first
-            state.push(...action.payload);
-            state.forEach(notification => {
-                // all read notifications are no longer new
-                notification.isNew = !notification.read
+            // state.push(...action.payload);
+            // state.forEach(notification => {
+            //     // all read notifications are no longer new
+            //     notification.isNew = !notification.read
+            // })
+
+            // notifications entity is no longer an array....KNOW YOUR ENTITY STRUCTURE BEFORE APPLY REDUCER FUNCS!
+            // change the isNew in the new notification first
+            Object.values(state.entities).forEach(notification => {
+                notification.isNew = !notification.read;
             })
+
+            // upsert: accept an array of entities or an object, shallowly insert it
+            // upsertting the new notifications into the entity
+            notificationsAdaptor.upsertMany(state, action.payload)
+
             // sort every date in the state 
-            state.sort((a, b) => b.date.localeCompare(a.date))
+            // they are pre-sorted any time
+            // state.sort((a, b) => b.date.localeCompare(a.date))
         })
     }
 })
+export const { selectAll: selectAllNotifications } = notificationsAdaptor.getSelectors(state => state.notifications)
 
 export const { allNotificationsRead } = notificationsSlice.actions
-
-export const selectAllNotifications = state => state.notifications
 
 export default notificationsSlice.reducer

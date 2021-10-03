@@ -1,13 +1,15 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import {
+    createSlice,
+    createAsyncThunk,
+    createEntityAdapter
+} from '@reduxjs/toolkit';
+
 import { client } from '../../api/client';
 
-const initialState = [];
+const usersAdaptor = createEntityAdapter();
 
-// [
-// { id: 0, name: 'Tianna Jenkins' },
-//     { id: 1, name: 'Kevin Grant' },
-//     { id: 2, name: 'Madison Price' }
-// ]
+// no extra fields needed in the initial state, just the standard shape
+const initialState = usersAdaptor.getInitialState();
 
 // thunks:
 export const fetchUsers = createAsyncThunk('/users/fetchUsers/', async () => {
@@ -20,22 +22,27 @@ const usersSlice = createSlice({
     initialState,
     reducers: {},
     extraReducers(builder) {
-        builder.addCase(fetchUsers.fulfilled, (state, action) => {
-            // its simply in action.payload? nothing more to open? or im just sleepy?
+        builder.addCase(fetchUsers.fulfilled, usersAdaptor.setAll)
 
-            // why dont we need to put the promise' data into the user's state?
-            // state.users = state.users.concat(action.payload);
+        // its simply in action.payload? nothing more to open? or im just sleepy?
 
-            // okay? we are just giving the payload to whoever calls it, w/o saving it anywhere?
-            // ok the payload lives in the store 4ever?
-            return action.payload
-        })
+        // why dont we need to put the promise' data into the user's state?
+        // state.users = state.users.concat(action.payload);
+
+        // okay? we are just giving the payload to whoever calls it, w/o saving it anywhere?
+        // ok the payload lives in the store 4ever?
+        // return action.payload
     }
 });
 
-export const selectAllUsers = state => state.users;
+// export const selectAllUsers = state => state.users;
 
-export const selectUserById = (state, userId) =>
-    state.users.find(user => user.id === userId);
+// export const selectUserById = (state, userId) =>
+//     state.users.find(user => user.id === userId);
+
+export const {
+    selectAll: selectAllUsers,
+    selectById: selectUserById
+} = usersAdaptor.getSelectors(state => state.users)
 
 export default usersSlice.reducer

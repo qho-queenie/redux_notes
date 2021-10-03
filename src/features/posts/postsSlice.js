@@ -1,13 +1,26 @@
 // createSlice to make a reducer function that handles posts data
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import {
+    createSlice,
+    createAsyncThunk,
+    createSelector,
+    createEntityAdapter
+} from '@reduxjs/toolkit';
+
 import { client } from '../../api/client';
 
-// the reducer needs some initial data when app starts up
-const initialState = {
-    posts: [],
+// createEntityAdaptor accepts 1 obj with values as 1. selectId (where is your unique ID?) 2. sortCompare, do you want your array to be sorted always?
+const postsAdaptor = createEntityAdapter({
+    // selectId is not provided, default unique id is entity => entity.id
+    sortComparer: (a, b) => b.date.localeCompare(a.date)
+})
+
+const initialState = postsAdaptor.getInitialState({
+    //with these extra params, we are merging tgt the given entity state obj structure
+    // (this is the initialState in the slice itself)
+    // the postsSlice needs to keep the status and error for the thunks(?)
     status: 'idle',
     error: null
-};
+})
 
 // thunks, need 2 args:
 // 1. string to be the prefix for the generated action type
@@ -85,19 +98,24 @@ const postsSlice = createSlice({
         postUpdated: (state, action) => {
             // hello destructuring:
             const { id, title, content } = action.payload;
-            const postToEdit = state.posts.find(post => post.id === id);
-            if (postToEdit) {
+            // we now can directly access something (a post here) in the entity using the post ID
+            const existingPost = state.entities[id];
+            // const postToEdit = state.posts.find(post => post.id === id);
+            if (existingPost) {
                 // benefits from destructuring:
-                postToEdit.title = title;
-                postToEdit.content = content;
+                existingPost.title = title;
+                existingPost.content = content;
             }
         },
 
         reactionAdded: (state, action) => {
             const { postId, reaction } = action.payload;
-            const postToEdit = state.posts.find(post => post.id === postId);
-            if (postToEdit) {
-                postToEdit.reactions[reaction]++;
+            // we now have reducer functions to accept the entity, just throw in the id to look up
+            const existingPost = state.entities[postId];
+
+            // const postToEdit = state.posts.find(post => post.id === postId);
+            if (existingPost) {
+                existingPost.reactions[reaction]++;
             }
         }
     },
@@ -109,11 +127,10 @@ const postsSlice = createSlice({
     // handles a single known action type based on an RTK action creator or an action type string
     extraReducers(builder) {
         builder
-            .addCase(addNewPost.fulfilled, (state, action) => {
-                state.status = 'succeeded'
-                // after posting to the server successfully, add the obj to the posts array
-                state.posts.push(action.payload)
-            })
+            .addCase(addNewPost.fulfilled, postsAdaptor.addOne)
+        // adding the new post direction to the array in the adaptor
+        // after posting to the server successfully, add the obj to the posts array
+        // state.posts.push(action.payload)
         // we are listening for the action types dispatched by the fetchPosts thunk:
         builder
             // all these cases are attached in the fetchPost thunk, 'pending', 'fulfilled', 'rejected'
@@ -125,8 +142,11 @@ const postsSlice = createSlice({
             })
             .addCase(fetchPosts.fulfilled, (state, action) => {
                 state.status = 'succeeded'
-                // we arent saving the results to a db, just the posts store
-                state.posts = state.posts.concat(action.payload);
+                // add all fetched posts to the array
+                // use upsertMany to pass in the draft state(update existing based on id, or add new) reducer as a mutation update utility
+                // and also the array of posts in action.payload
+                postsAdaptor.upsertMany(state, action.payload)
+                // state.posts = state.posts.concat(action.payload);
             })
             .addCase(fetchPosts.rejected, (state, action) => {
                 state.status = 'failed'
@@ -140,9 +160,30 @@ export const { postAdded, postUpdated, reactionAdded } = postsSlice.actions
 
 export default postsSlice.reducer
 
-// common selectors: 
-export const selectPostById = (state, postId) => {
-    state.posts.posts.find(post => post.id === postId);
-}
+// selectors are now customized selectors, and using memoized getSelectors from the Reselect package
+export const {
+    // the generated selector functions are always called selectAll and selectById
+    selectAll: selectAllPosts,
+    selectById: selectPostById,
+    selectIds: selectPostIds
+    // this pass in a 'general' selector that all of these getSelectors, that all depend on the state.posts as the entity state itself
+    // this is the globalized selector
+} = postsAdaptor.getSelectors(state => state.posts)
 
-export const selectAllPosts = state => state.posts.posts;
+// common selectors: 
+// export const selectAllPosts = state => state.posts.posts;
+// export const selectPostById = (state, postId) => {
+//     state.posts.posts.find(post => post.id === postId);
+// }
+
+// createSelectors:
+
+// * memoizing selectors have an internal state and its the only state they depend on, 
+// declare them outside the comp, so the same selector instance is used for each render
+
+// input arguments are selectPostsByUser, and a selector that extracts userId
+// so selectPostsByUsers only re-runs if posts and userId change
+export const selectPostsByUser = createSelector(
+    [selectAllPosts, (state, userId) => userId],
+    (posts, userId) => posts.filter(post => post.user === userId)
+)
